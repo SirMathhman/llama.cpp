@@ -1417,6 +1417,23 @@ extern "C" {
                                float   tau,
                                float   eta);
 
+    /// @details Ramps a logit bias toward `target_token` (e.g. a model's
+    /// </think> token) as `n_generated` (tracked via .accept) approaches
+    /// `n_budget`. Bias is 0 below `ramp_start` (fraction of budget), then
+    /// grows to `max_bias` at 100%, shaped by `exponent` (1 = linear,
+    /// >1 = stays near-zero longer then ramps late). If `hard_force` is
+    /// true, the distribution is collapsed onto target_token once the
+    /// budget is reached (a safety ceiling). Place this sampler BEFORE any
+    /// truncating sampler (top-k/top-p/min-p) in the chain, or the target
+    /// token may already have been pruned and this becomes a no-op.
+    LLAMA_API struct llama_sampler * llama_sampler_init_think_budget(
+                             int32_t   n_budget,
+                               float   ramp_start,
+                               float   max_bias,
+                               float   exponent,
+                         llama_token   target_token,
+                                bool   hard_force);
+
     /// @details Initializes a GBNF grammar, see grammars/README.md for details.
     /// @param vocab The vocabulary that this grammar will be used with.
     /// @param grammar_str The production rules for the grammar, encoded as a string. Returns an empty grammar if empty. Returns NULL if parsing of grammar_str fails.

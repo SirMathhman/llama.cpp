@@ -293,6 +293,15 @@ struct common_params_sampling {
     std::string               reasoning_budget_message;        // message injected before end tag when budget exhausted
     bool                      reasoning_control = false;       // create the budget sampler on demand so reasoning can be ended at runtime
 
+    // soft think-budget sampler parameters (ramped logit bias toward a target
+    // token, e.g. </think>, as generation approaches a token budget -- a
+    // gentler complement to the hard reasoning_budget_* truncation above)
+    int32_t                   think_budget_tokens     = -1;   // -1 = disabled, >= 0 = token budget for the ramp
+    float                     think_budget_ramp_start = 0.5f; // fraction of budget (0..1) where bias starts ramping
+    float                     think_budget_bias       = 10.0f;// max logit bias applied at 100% of budget
+    float                     think_budget_exponent   = 2.0f; // ramp shape: 1 = linear, >1 = back-loaded
+    std::string               think_budget_target;            // string tokenizing to the single target token, e.g. "</think>"
+
     bool backend_sampling = false;
 
     // print the parameters into a string

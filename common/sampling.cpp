@@ -337,6 +337,29 @@ struct common_sampler * common_sampler_init(
         }
     }
 
+    // soft think-budget sampler: pushed before any truncating sampler
+    // (top-k/top-p/min-p/typical/xtc/dry) so the ramped bias can still see
+    // and affect the target token's logit -- if a truncating sampler runs
+    // first, it can prune the target out of the candidate set and silently
+    // turn this into a no-op. this exists independently of (and in addition
+    // to) the hard reasoning_budget_* truncation applied earlier via rbudget.
+    if (params.think_budget_tokens >= 0 && !params.think_budget_target.empty()) {
+        const llama_tokens target_tokens = common_tokenize(vocab, params.think_budget_target, false, true);
+
+        if (target_tokens.size() != 1) {
+            LOG_WRN("%s: think-budget target '%s' did not tokenize to exactly one token (got %zu); think-budget sampler disabled\n",
+                __func__, params.think_budget_target.c_str(), target_tokens.size());
+        } else {
+            samplers.push_back(llama_sampler_init_think_budget(
+                params.think_budget_tokens,
+                params.think_budget_ramp_start,
+                params.think_budget_bias,
+                params.think_budget_exponent,
+                target_tokens[0],
+                /* hard_force */ false)); // hard forcing is rbudget's job; this sampler only ramps
+        }
+    }
+
     if (params.mirostat == 0) {
 
         bool use_adaptive_p = false; // see below
