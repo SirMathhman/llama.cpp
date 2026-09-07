@@ -3750,6 +3750,44 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         }
     ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_MESSAGE"));
     add_opt(common_arg(
+        {"--think-budget"}, "N",
+        "soft token budget for a ramped bias toward the end-of-thinking token: -1 to disable, N>=0 for the budget the ramp is measured against.\n"
+        "unlike --reasoning-budget, this does not hard-truncate -- it only biases sampling more strongly toward --think-budget-target as N is approached.\n"
+        "requires --think-budget-target to be set. (default: -1)",
+        [](common_params & params, int value) {
+            if (value < -1) { throw std::invalid_argument("invalid value"); }
+            params.sampling.think_budget_tokens = value;
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_SOFT"));
+    add_opt(common_arg(
+        {"--think-budget-target"}, "TOKEN",
+        "string that tokenizes to exactly one token, biased toward as --think-budget is approached (e.g. \"</think>\"). required to enable --think-budget",
+        [](common_params & params, const std::string & value) {
+            params.sampling.think_budget_target = value;
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_TARGET"));
+    add_opt(common_arg(
+        {"--think-budget-ramp-start"}, "F",
+        "fraction (0..1) of --think-budget at which the bias starts ramping up from zero (default: 0.5)",
+        [](common_params & params, const std::string & value) {
+            params.sampling.think_budget_ramp_start = std::stof(value);
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_RAMP_START"));
+    add_opt(common_arg(
+        {"--think-budget-bias"}, "F",
+        "max logit bias applied to --think-budget-target once the budget is fully reached (default: 10.0)",
+        [](common_params & params, const std::string & value) {
+            params.sampling.think_budget_bias = std::stof(value);
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_BIAS"));
+    add_opt(common_arg(
+        {"--think-budget-exponent"}, "F",
+        "shape of the ramp: 1.0 = linear, >1.0 = stays near zero longer then ramps sharply near the budget (default: 2.0)",
+        [](common_params & params, const std::string & value) {
+            params.sampling.think_budget_exponent = std::stof(value);
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_COMPLETION, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_THINK_BUDGET_EXPONENT"));
+    add_opt(common_arg(
         {"--reasoning-preserve"},
         {"--no-reasoning-preserve"},
         "preserve reasoning trace in the full history, not just the last assistant message (default: enabled)\n"
