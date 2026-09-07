@@ -33,6 +33,12 @@ export const AUDIO_FILE_TYPES = {
 } as const;
 
 export const VIDEO_FILE_TYPES = {
+	// iPhones record QuickTime .mov, which ffmpeg reads with the same
+	// mov,mp4,m4a,3gp,3g2,mj2 demuxer it uses for .mp4
+	[FileTypeVideo.MOV]: {
+		extensions: [FileExtensionVideo.MOV],
+		mimeTypes: [MimeTypeVideo.QUICKTIME]
+	},
 	[FileTypeVideo.MP4]: {
 		extensions: [FileExtensionVideo.MP4],
 		mimeTypes: [MimeTypeVideo.MP4]

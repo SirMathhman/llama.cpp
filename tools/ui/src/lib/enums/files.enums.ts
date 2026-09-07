@@ -37,6 +37,7 @@ export enum FileTypeAudio {
 }
 
 export enum FileTypeVideo {
+	MOV = 'mov',
 	MP4 = 'mp4',
 	OGG = 'ogg'
 }
@@ -103,6 +104,7 @@ export enum FileExtensionAudio {
 }
 
 export enum FileExtensionVideo {
+	MOV = '.mov',
 	MP4 = '.mp4',
 	OGG = '.ogg'
 }
@@ -203,7 +205,8 @@ export enum MimeTypeAudio {
 
 export enum MimeTypeVideo {
 	MP4 = 'video/mp4',
-	OGG = 'video/ogg'
+	OGG = 'video/ogg',
+	QUICKTIME = 'video/quicktime'
 }
 
 export enum MimeTypeImage {

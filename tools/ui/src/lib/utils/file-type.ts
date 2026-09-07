@@ -10,6 +10,7 @@ import {
 	FileExtensionImage,
 	FileExtensionPdf,
 	FileExtensionText,
+	FileExtensionVideo,
 	FileTypeCategory,
 	MimeTypeApplication,
 	MimeTypeAudio,
@@ -51,6 +52,7 @@ export function getFileTypeCategory(mimeType: string): FileTypeCategory | null {
 		// Video
 		case MimeTypeVideo.MP4:
 		case MimeTypeVideo.OGG:
+		case MimeTypeVideo.QUICKTIME:
 			return FileTypeCategory.VIDEO;
 
 		// PDF
@@ -128,6 +130,12 @@ export function getFileTypeCategoryByExtension(filename: string): FileTypeCatego
 		case FileExtensionAudio.MP3:
 		case FileExtensionAudio.WAV:
 			return FileTypeCategory.AUDIO;
+
+		// Video
+		case FileExtensionVideo.MOV:
+		case FileExtensionVideo.MP4:
+		case FileExtensionVideo.OGG:
+			return FileTypeCategory.VIDEO;
 
 		// PDF
 		case FileExtensionPdf.PDF:

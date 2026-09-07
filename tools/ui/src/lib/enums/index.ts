@@ -46,6 +46,7 @@ export {
 	FileExtensionAudio,
 	FileExtensionPdf,
 	FileExtensionText,
+	FileExtensionVideo,
 	MimeTypeApplication,
 	MimeTypeAudio,
 	MimeTypeVideo,
