@@ -371,6 +371,9 @@ static bool is_webp_file(const unsigned char * buf, size_t len) {
 #ifdef MTMD_VIDEO
 static mtmd_bitmap * decode_webp_with_ffmpeg(const mtmd_context * mctx, const unsigned char * buf, size_t len, bool placeholder,
                                              const mtmd_helper_video_init_params & params);
+// mtmd_helper_video is only defined further down, so the video branch below
+// stamps the source hash through this setter rather than touching the field.
+static void video_set_media_id(mtmd_helper_video * vctx, const std::string & id);
 #endif
 
 mtmd_helper_bitmap_wrapper mtmd_helper_bitmap_init_from_buf(const mtmd_context * ctx, const unsigned char * buf, size_t len, bool placeholder,
@@ -436,6 +439,7 @@ mtmd_helper_bitmap_wrapper mtmd_helper_bitmap_init_from_buf(const mtmd_context *
             LOG_ERR("%s: failed to decode buffer as either image/audio/video\n", __func__);
             return {nullptr, nullptr};
         }
+        video_set_media_id(video_ctx, id); // sha256 of the source; empty for placeholders
         result = mtmd_bitmap_init_lazy(ctx,
             id.empty() ? nullptr : id.c_str(),
             video_ctx,
@@ -527,6 +531,7 @@ struct mtmd_helper_video {
     std::string ffprobe_bin;
     float fps_target = 0.0f;
     mtmd_helper_video_info info = {};
+    std::string media_id; // sha256 of the source file, used to build per-frame ids
 
     // RAII wrapper for managing subprocess
     struct subprocess_handle {
@@ -613,7 +618,7 @@ struct mtmd_helper_video {
         const char * cmd[] = {
             ffprobe_bin.c_str(),
             "-v", "quiet",
-            "-show_entries", "stream=width,height,r_frame_rate,nb_frames,duration",
+            "-show_entries", "stream=width,height,r_frame_rate,nb_frames,duration:stream_side_data=rotation",
             "-select_streams", "v:0",
             "-of", "default=noprint_wrappers=1",
             input_arg,
@@ -643,6 +648,7 @@ struct mtmd_helper_video {
         float orig_fps = 0.0f;
         float duration = -1.0f;
         int32_t n_frames_orig = -1;
+        int32_t rotation = 0; // display-matrix rotation, in degrees
         char line[256];
         FILE * fp = probe_sp.stdout_pipe();
 
@@ -665,6 +671,8 @@ struct mtmd_helper_video {
                 n_frames_orig = atoi(val);
             } else if (strcmp(key, "duration") == 0 && strcmp(val, "N/A") != 0) {
                 duration = (float)atof(val);
+            } else if (strcmp(key, "rotation") == 0) {
+                rotation = atoi(val);
             }
         }
 
@@ -672,6 +680,20 @@ struct mtmd_helper_video {
 
         if (width == 0 || height == 0 || orig_fps <= 0.0f) {
             return false;
+        }
+
+        // ffprobe reports the CODED dimensions, but ffmpeg auto-applies the
+        // display matrix while decoding, so for a +/-90 degree rotation the
+        // frames arriving on the pipe have width and height swapped relative
+        // to what we just parsed. The byte count is identical either way, so
+        // getting this wrong does not fail the read -- it silently reinterprets
+        // every frame at the wrong stride and hands the vision encoder a
+        // sheared image. Every phone-shot video carries such a matrix.
+        const int32_t rot_norm = ((rotation % 360) + 360) % 360;
+        if (rot_norm == 90 || rot_norm == 270) {
+            const uint32_t tmp = width;
+            width  = height;
+            height = tmp;
         }
 
         if (duration < 0.0f && n_frames_orig > 0) {
@@ -788,6 +810,16 @@ struct mtmd_helper_video {
         current_frame++;
         mtmd_bitmap * frame = mtmd_bitmap_init(info.width, info.height, frame_buf.data());
         mtmd_bitmap_set_mergeable(frame, true);
+        if (!media_id.empty()) {
+            // The server compares cached media chunks on (id, n_tokens) alone
+            // (server_tokens::get_common_prefix). Frames produced here used to
+            // carry no id at all, so two different videos with the same
+            // geometry and duration compared equal and the second request
+            // silently reused the first one's KV cache. Derive the id from the
+            // source hash plus the frame index so that cannot happen.
+            const std::string frame_id = media_id + "#" + std::to_string(current_frame - 1);
+            mtmd_bitmap_set_id(frame, frame_id.c_str());
+        }
         return frame;
     }
 
@@ -849,6 +881,10 @@ struct mtmd_helper_video {
         return 0.0f;
     }
 };
+
+static void video_set_media_id(mtmd_helper_video * vctx, const std::string & id) {
+    vctx->media_id = id;
+}
 #endif
 
 mtmd_helper_video_init_params mtmd_helper_video_init_params_default() {
