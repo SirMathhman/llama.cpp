@@ -59,21 +59,6 @@ function(ggml_add_cpu_backend_variant_impl tag_name)
     target_compile_features(${GGML_CPU_NAME} PRIVATE c_std_11 cxx_std_17)
     target_include_directories(${GGML_CPU_NAME} PRIVATE . ggml-cpu)
 
-    if (APPLE AND GGML_ACCELERATE)
-        find_library(ACCELERATE_FRAMEWORK Accelerate)
-        if (ACCELERATE_FRAMEWORK)
-            message(STATUS "Accelerate framework found")
-
-            target_compile_definitions(${GGML_CPU_NAME} PRIVATE GGML_USE_ACCELERATE)
-            target_compile_definitions(${GGML_CPU_NAME} PRIVATE ACCELERATE_NEW_LAPACK)
-            target_compile_definitions(${GGML_CPU_NAME} PRIVATE ACCELERATE_LAPACK_ILP64)
-
-            target_link_libraries(${GGML_CPU_NAME} PRIVATE ${ACCELERATE_FRAMEWORK})
-        else()
-            message(WARNING "Accelerate framework not found")
-        endif()
-    endif()
-
     if (GGML_OPENMP_ENABLED)
         target_compile_definitions(${GGML_CPU_NAME} PRIVATE GGML_USE_OPENMP)
         target_link_libraries(${GGML_CPU_NAME} PRIVATE ${GGML_OPENMP_TARGET_C} ${GGML_OPENMP_TARGET_CXX})

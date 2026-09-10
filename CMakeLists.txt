@@ -95,19 +95,8 @@ if (LLAMA_STANDALONE)
     list(APPEND CMAKE_VS_GLOBALS EnforceProcessCountAcrossBuilds=true)
 endif()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-    set(LLAMA_TOOLS_INSTALL_DEFAULT OFF)
-else()
-    set(LLAMA_TOOLS_INSTALL_DEFAULT ${LLAMA_STANDALONE})
-endif()
-
-# subprocess spawning isn't a supported/sandbox-friendly operation on mobile OSes or in WASM
-if (CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "Android" OR ANDROID
-        OR CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR EMSCRIPTEN)
-    set(LLAMA_SUBPROCESS_DEFAULT OFF)
-else()
-    set(LLAMA_SUBPROCESS_DEFAULT ON)
-endif()
+set(LLAMA_TOOLS_INSTALL_DEFAULT ${LLAMA_STANDALONE})
+set(LLAMA_SUBPROCESS_DEFAULT ON)
 
 #
 # option list
@@ -185,13 +174,7 @@ endfunction()
 
 llama_option_depr(FATAL_ERROR LLAMA_CUBLAS              GGML_CUDA)
 llama_option_depr(WARNING     LLAMA_CUDA                GGML_CUDA)
-llama_option_depr(WARNING     LLAMA_METAL               GGML_METAL)
-llama_option_depr(WARNING     LLAMA_METAL_EMBED_LIBRARY GGML_METAL_EMBED_LIBRARY)
 llama_option_depr(WARNING     LLAMA_NATIVE              GGML_NATIVE)
-llama_option_depr(WARNING     LLAMA_RPC                 GGML_RPC)
-llama_option_depr(WARNING     LLAMA_SYCL                GGML_SYCL)
-llama_option_depr(WARNING     LLAMA_SYCL_F16            GGML_SYCL_F16)
-llama_option_depr(WARNING     LLAMA_CANN                GGML_CANN)
 llama_option_depr(WARNING     LLAMA_CURL)
 
 include("cmake/license.cmake")

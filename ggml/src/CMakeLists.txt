@@ -3,11 +3,6 @@ include("../cmake/common.cmake")
 
 add_compile_definitions(GGML_SCHED_MAX_COPIES=${GGML_SCHED_MAX_COPIES})
 
-# enable libstdc++ assertions for debug builds
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    add_compile_definitions($<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>)
-endif()
-
 if (NOT MSVC)
     if (GGML_SANITIZE_THREAD)
         add_compile_options(-fsanitize=thread)
@@ -76,27 +71,12 @@ if (GGML_CCACHE AND NOT CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_LAU
             set(GGML_CCACHE_VARIANT sccache)
         endif()
         # TODO: should not be set globally
-        if (GGML_SYCL AND GGML_CCACHE_FOUND AND WIN32)
-            set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "ccache compiler_type=icl")
-        else ()
-            set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${GGML_CCACHE_VARIANT}")
-        endif ()
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${GGML_CCACHE_VARIANT}")
         set(ENV{CCACHE_SLOPPINESS} time_macros)
         message(STATUS "${GGML_CCACHE_VARIANT} found, compilation results will be cached. Disable with GGML_CCACHE=OFF.")
     else()
         message(STATUS "Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF")
     endif ()
-endif()
-
-# this version of Apple ld64 is buggy
-execute_process(
-    COMMAND ${CMAKE_C_COMPILER} ${CMAKE_EXE_LINKER_FLAGS} -Wl,-v
-    ERROR_VARIABLE output
-    OUTPUT_QUIET
-)
-
-if (output MATCHES "dyld-1015\.7")
-    add_compile_definitions(HAVE_BUGGY_APPLE_LINKER)
 endif()
 
 # architecture specific
@@ -125,58 +105,6 @@ if (NOT MSVC)
     if (GGML_GPROF)
         add_compile_options(-pg)
     endif()
-endif()
-
-#
-# POSIX conformance
-#
-
-# clock_gettime came in POSIX.1b (1993)
-# CLOCK_MONOTONIC came in POSIX.1-2001 / SUSv3 as optional
-# posix_memalign came in POSIX.1-2001 / SUSv3
-# M_PI is an XSI extension since POSIX.1-2001 / SUSv3, came in XPG1 (1985)
-
-# Somehow in OpenBSD whenever POSIX conformance is specified
-# some string functions rely on locale_t availability,
-# which was introduced in POSIX.1-2008, forcing us to go higher
-if (CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
-    add_compile_definitions(_XOPEN_SOURCE=700)
-elseif (CMAKE_SYSTEM_NAME MATCHES "AIX")
-    # Don't define _XOPEN_SOURCE.  We need _ALL_SOURCE, which is the default,
-    # in order to define _SC_PHYS_PAGES.
-else()
-    add_compile_definitions(_XOPEN_SOURCE=600)
-endif()
-
-# Data types, macros and functions related to controlling CPU affinity and
-# some memory allocation are available on Linux through GNU extensions in libc
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Android")
-    add_compile_definitions(_GNU_SOURCE)
-endif()
-
-# RLIMIT_MEMLOCK came in BSD, is not specified in POSIX.1,
-# and on macOS its availability depends on enabling Darwin extensions
-# similarly on DragonFly, enabling BSD extensions is necessary
-if (
-    CMAKE_SYSTEM_NAME MATCHES "Darwin" OR
-    CMAKE_SYSTEM_NAME MATCHES "iOS"    OR
-    CMAKE_SYSTEM_NAME MATCHES "tvOS"   OR
-    CMAKE_SYSTEM_NAME MATCHES "DragonFly"
-)
-    add_compile_definitions(_DARWIN_C_SOURCE)
-endif()
-
-# alloca is a non-standard interface that is not visible on BSDs when
-# POSIX conformance is specified, but not all of them provide a clean way
-# to enable it in such cases
-if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    add_compile_definitions(__BSD_VISIBLE)
-endif()
-if (CMAKE_SYSTEM_NAME MATCHES "NetBSD")
-    add_compile_definitions(_NETBSD_SOURCE)
-endif()
-if (CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
-    add_compile_definitions(_BSD_SOURCE)
 endif()
 
 if (WIN32)
@@ -374,10 +302,6 @@ endif()
 
 target_link_libraries(ggml PUBLIC ggml-base)
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    target_link_libraries(ggml PRIVATE dl)
-endif()
-
 function(ggml_add_backend_library backend)
     if (GGML_BACKEND_DL)
         add_library(${backend} MODULE ${ARGN})
@@ -405,13 +329,10 @@ function(ggml_add_backend_library backend)
     endif()
 
     # Set versioning properties for all backend libraries
-    # Building a MODULE library with a version is not supported on macOS (https://gitlab.kitware.com/cmake/cmake/-/issues/20782)
-    if (NOT (APPLE AND GGML_BACKEND_DL))
-        set_target_properties(${backend} PROPERTIES
-            VERSION ${GGML_VERSION}
-            SOVERSION ${GGML_VERSION_MAJOR}
-        )
-    endif()
+    set_target_properties(${backend} PROPERTIES
+        VERSION ${GGML_VERSION}
+        SOVERSION ${GGML_VERSION_MAJOR}
+    )
 
     if(NOT GGML_AVAILABLE_BACKENDS)
         set(GGML_AVAILABLE_BACKENDS "${backend}"
@@ -516,93 +437,14 @@ if (GGML_CPU_ALL_VARIANTS)
             # MSVC doesn't support AMX
             ggml_add_cpu_backend_variant(sapphirerapids SSE42 AVX F16C FMA AVX2 BMI2 AVX512 AVX512_VBMI AVX512_VNNI AVX512_BF16 AMX_TILE AMX_INT8)
         endif()
-    elseif(GGML_SYSTEM_ARCH STREQUAL "ARM")
-        if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-            # Many of these features are optional so we build versions with popular
-            # combinations and name the backends based on the version they were
-            # first released with
-            ggml_add_cpu_backend_variant(armv8.0_1)
-            ggml_add_cpu_backend_variant(armv8.2_1    DOTPROD)
-            ggml_add_cpu_backend_variant(armv8.2_2    DOTPROD FP16_VECTOR_ARITHMETIC)
-            ggml_add_cpu_backend_variant(armv8.2_3    DOTPROD FP16_VECTOR_ARITHMETIC SVE)
-            ggml_add_cpu_backend_variant(armv8.6_1    DOTPROD FP16_VECTOR_ARITHMETIC SVE MATMUL_INT8)
-            ggml_add_cpu_backend_variant(armv8.6_2    DOTPROD FP16_VECTOR_ARITHMETIC SVE MATMUL_INT8 SVE2)
-            ggml_add_cpu_backend_variant(armv9.2_1    DOTPROD FP16_VECTOR_ARITHMETIC SVE MATMUL_INT8 SME)
-            ggml_add_cpu_backend_variant(armv9.2_2    DOTPROD FP16_VECTOR_ARITHMETIC SVE MATMUL_INT8 SVE2 SME)
-        elseif (CMAKE_SYSTEM_NAME MATCHES "Android")
-            # Android-specific backends with SoC-compatible feature sets
-            ggml_add_cpu_backend_variant(android_armv8.0_1)
-            ggml_add_cpu_backend_variant(android_armv8.2_1    DOTPROD)
-            ggml_add_cpu_backend_variant(android_armv8.2_2    DOTPROD FP16_VECTOR_ARITHMETIC)
-            ggml_add_cpu_backend_variant(android_armv8.6_1    DOTPROD FP16_VECTOR_ARITHMETIC MATMUL_INT8)
-            ggml_add_cpu_backend_variant(android_armv9.0_1    DOTPROD MATMUL_INT8 FP16_VECTOR_ARITHMETIC SVE2)
-            ggml_add_cpu_backend_variant(android_armv9.2_1    DOTPROD MATMUL_INT8 FP16_VECTOR_ARITHMETIC SVE SME)
-            ggml_add_cpu_backend_variant(android_armv9.2_2    DOTPROD MATMUL_INT8 FP16_VECTOR_ARITHMETIC SVE SVE2 SME)
-        elseif (APPLE)
-            ggml_add_cpu_backend_variant(apple_m1             DOTPROD)
-            ggml_add_cpu_backend_variant(apple_m2_m3          DOTPROD MATMUL_INT8)
-            ggml_add_cpu_backend_variant(apple_m4             DOTPROD MATMUL_INT8 NOSVE SME)
-        else()
-            message(FATAL_ERROR "Unsupported ARM target OS: ${CMAKE_SYSTEM_NAME}")
-        endif()
-    elseif (GGML_SYSTEM_ARCH STREQUAL "PowerPC")
-        if (CMAKE_SYSTEM_NAME MATCHES "Linux|AIX")
-            ggml_add_cpu_backend_variant(power0)
-            ggml_add_cpu_backend_variant(power7_1       POWER7)
-            ggml_add_cpu_backend_variant(power7_2       POWER7  VSX)
-            ggml_add_cpu_backend_variant(power8_1       POWER8)
-            ggml_add_cpu_backend_variant(power8_2       POWER8  VSX)
-            ggml_add_cpu_backend_variant(power9         POWER9  VSX)
-            ggml_add_cpu_backend_variant(power10        POWER10 VSX)
-            # POWER11 backend: only if compiler supports -mcpu=power11
-            check_cxx_compiler_flag("-mcpu=power11" GGML_CXX_SUPPORTS_POWER11)
-            if (GGML_CXX_SUPPORTS_POWER11)
-                message(STATUS "Compiler supports -mcpu=power11, enabling POWER11 backend")
-                ggml_add_cpu_backend_variant(power11 POWER11 VSX)
-            else()
-                message(STATUS "Skipping POWER11 backend: compiler does not support -mcpu=power11")
-            endif()
-        else()
-            message(FATAL_ERROR "Unsupported PowerPC target OS: ${CMAKE_SYSTEM_NAME}")
-        endif()
-    elseif (GGML_SYSTEM_ARCH STREQUAL "s390x")
-        if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-            ggml_add_cpu_backend_variant(z15    Z15 VXE2)
-            ggml_add_cpu_backend_variant(z16    Z16 VXE2 NNPA)
-        else()
-            message(FATAL_ERROR "Unsupported s390x target OS: ${CMAKE_SYSTEM_NAME}")
-        endif()
-    elseif (GGML_SYSTEM_ARCH STREQUAL "riscv64")
-        if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-            ggml_add_cpu_backend_variant(riscv64_0)
-            ggml_add_cpu_backend_variant(riscv64_v   RVV)
-        else()
-            message(FATAL_ERROR "Unsupported RISC-V target OS: ${CMAKE_SYSTEM_NAME}")
-        endif()
     else()
-        message(FATAL_ERROR "GGML_CPU_ALL_VARIANTS not yet supported with ${GGML_SYSTEM_ARCH} on ${CMAKE_SYSTEM_NAME}")
+        message(FATAL_ERROR "GGML_CPU_ALL_VARIANTS is only supported for x86 on Windows in this fork (got ${GGML_SYSTEM_ARCH})")
     endif()
 elseif (GGML_CPU)
     ggml_add_cpu_backend_variant_impl("")
 endif()
 
-ggml_add_backend(BLAS)
-ggml_add_backend(CANN)
 ggml_add_backend(CUDA)
-ggml_add_backend(ET)
-ggml_add_backend(HIP)
-ggml_add_backend(METAL)
-ggml_add_backend(MUSA)
-ggml_add_backend(RPC)
-ggml_add_backend(VirtGPU)
-ggml_add_backend(SYCL)
-ggml_add_backend(Vulkan)
-ggml_add_backend(WebGPU)
-ggml_add_backend(zDNN)
-ggml_add_backend(OpenCL)
-ggml_add_backend(Hexagon)
-ggml_add_backend(ZenDNN)
-ggml_add_backend(OPENVINO)
 
 foreach (target ggml-base ggml)
     target_include_directories(${target} PUBLIC    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include> $<INSTALL_INTERFACE:include>)
@@ -613,16 +455,6 @@ target_link_libraries(ggml-base PRIVATE Threads::Threads)
 
 if (DEFINED MATH_LIBRARY)
     target_link_libraries(ggml-base PRIVATE ${MATH_LIBRARY})
-elseif (NOT WIN32 AND NOT DEFINED ENV{ONEAPI_ROOT})
-    target_link_libraries(ggml-base PRIVATE m)
-endif()
-
-if (CMAKE_SYSTEM_NAME MATCHES "Android")
-    target_link_libraries(ggml-base PRIVATE dl)
-endif()
-
-if(CMAKE_SYSTEM_NAME MATCHES "visionOS")
-    target_compile_definitions(ggml-base PUBLIC _DARWIN_C_SOURCE)
 endif()
 
 if (BUILD_SHARED_LIBS)
