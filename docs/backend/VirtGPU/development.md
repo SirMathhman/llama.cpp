@@ -47,7 +47,7 @@ The backend requires patches that are currently under review:
 # Build the backend that runs natively on macOS
 mkdir llama.cpp
 cd llama.cpp
-git clone https://github.com/ggml-org/llama.cpp.git src
+git clone https://github.com/SirMathhman/llama.cpp.git src
 cd src
 
 LLAMA_MAC_BUILD=$PWD/build/ggml-virtgpu-backend
@@ -94,7 +94,7 @@ Option A: Build from a script:
 ```bash
 # Inside a Linux container
 mkdir llama.cpp
-git clone https://github.com/ggml-org/llama.cpp.git src
+git clone https://github.com/SirMathhman/llama.cpp.git src
 cd src
 
 LLAMA_LINUX_BUILD=$PWD/build-virtgpu
@@ -114,7 +114,7 @@ USER 0
 
 WORKDIR /app/remoting
 
-ARG LLAMA_CPP_REPO="https://github.com/ggml-org/llama.cpp.git"
+ARG LLAMA_CPP_REPO="https://github.com/SirMathhman/llama.cpp.git"
 ARG LLAMA_CPP_VERSION="master"
 ARG LLAMA_CPP_CMAKE_FLAGS="-DGGML_VIRTGPU=ON"
 ARG LLAMA_CPP_CMAKE_BUILD_FLAGS="--parallel 4"
@@ -197,6 +197,7 @@ podman run $PODMAN_CACHE_ARGS -it --rm --device /dev/dri localhost/llama-cpp.vir
 ```
 
 Expected output (performance may vary):
+
 ```
 | model                          |       size |     params | backend    | ngl |          test |                  t/s |
 | ------------------------------ | ---------: | ---------: | ---------- | --: | ------------: | -------------------: |
@@ -211,6 +212,7 @@ Expected output (performance may vary):
 ⚠️ **Warning**: Setting `DYLD_LIBRARY_PATH` from SSH doesn't work on macOS. Here is a workaround:
 
 **Workaround 1: Replace system library**
+
 ```bash
 VIRGL_BUILD_DIR=$HOME/remoting/virglrenderer/build  # ⚠️ adapt to your system
 BREW_VIRGL_DIR=/opt/homebrew/Cellar/virglrenderer/0.10.4d/lib
