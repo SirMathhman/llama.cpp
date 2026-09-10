@@ -2,6 +2,7 @@
 
 > [!WARNING]
 > **Note:** zDNN is **not** the same as ZenDNN.
+>
 > - **zDNN** (this page): IBM's Deep Neural Network acceleration library for IBM Z & LinuxONE Mainframes
 > - **ZenDNN**: AMD's deep learning library for AMD EPYC CPUs ([see ZenDNN documentation](ZenDNN.md))
 
@@ -55,7 +56,7 @@ sudo make install
 ## 2. Build llama.cpp
 
 ```sh
-git clone https://github.com/ggml-org/llama.cpp
+git clone https://github.com/SirMathhman/llama.cpp
 cd llama.cpp
 
 cmake -S . -G Ninja -B build \

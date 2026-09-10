@@ -43,18 +43,18 @@ For more info, please refer to the [AGENTS.md](AGENTS.md) file.
 
 - llama.cpp uses the ggml tensor library for model evaluation. If you are unfamiliar with ggml, consider taking a look at the [examples in the ggml repository](https://github.com/ggml-org/ggml/tree/master/examples/). [simple](https://github.com/ggml-org/ggml/tree/master/examples/simple) shows the bare minimum for using ggml. [gpt-2](https://github.com/ggml-org/ggml/tree/master/examples/gpt-2) has minimal implementations for language model inference using GPT-2. [mnist](https://github.com/ggml-org/ggml/tree/master/examples/mnist) demonstrates how to train and evaluate a simple image classifier
 - Test your changes:
-  - Execute [the full CI locally on your machine](ci/README.md) before publishing
-  - Verify that the perplexity and the performance are not affected negatively by your changes (use `llama-perplexity` and `llama-bench`)
-  - If you modified the `ggml` source, run the `test-backend-ops` tool to check whether different backend implementations of the `ggml` operators produce consistent results (this requires access to at least two different `ggml` backends)
-  - If you modified a `ggml` operator or added a new one, add the corresponding test cases to `test-backend-ops`
+    - Execute [the full CI locally on your machine](ci/README.md) before publishing
+    - Verify that the perplexity and the performance are not affected negatively by your changes (use `llama-perplexity` and `llama-bench`)
+    - If you modified the `ggml` source, run the `test-backend-ops` tool to check whether different backend implementations of the `ggml` operators produce consistent results (this requires access to at least two different `ggml` backends)
+    - If you modified a `ggml` operator or added a new one, add the corresponding test cases to `test-backend-ops`
 - Create separate PRs for each feature or fix:
-  - Avoid combining unrelated changes in a single PR
-  - When adding support for a new model or feature, focus on **CPU support only** in the initial PR unless you have a good reason not to. Add support for other backends like CUDA in follow-up PRs
-  - In particular, adding new data types (extension of the `ggml_type` enum) carries with it a disproportionate maintenance burden. As such, to add a new quantization type you will need to meet the following *additional* criteria *at minimum*:
-    - convert a small model to GGUF using the new type and upload it to HuggingFace
-    - provide [perplexity](https://github.com/ggml-org/llama.cpp/tree/master/tools/perplexity) comparisons to FP16/BF16 (whichever is the native precision) as well as to types of similar size
-    - provide KL divergence data calculated vs. the FP16/BF16 (whichever is the native precision) version for both the new type as well as types of similar size
-    - provide [performance data](https://github.com/ggml-org/llama.cpp/tree/master/tools/llama-bench) for the new type in comparison to types of similar size on pure CPU
+    - Avoid combining unrelated changes in a single PR
+    - When adding support for a new model or feature, focus on **CPU support only** in the initial PR unless you have a good reason not to. Add support for other backends like CUDA in follow-up PRs
+    - In particular, adding new data types (extension of the `ggml_type` enum) carries with it a disproportionate maintenance burden. As such, to add a new quantization type you will need to meet the following _additional_ criteria _at minimum_:
+        - convert a small model to GGUF using the new type and upload it to HuggingFace
+        - provide [perplexity](tools/perplexity/README.md) comparisons to FP16/BF16 (whichever is the native precision) as well as to types of similar size
+        - provide KL divergence data calculated vs. the FP16/BF16 (whichever is the native precision) version for both the new type as well as types of similar size
+        - provide [performance data](tools/llama-bench/README.md) for the new type in comparison to types of similar size on pure CPU
 - Consider allowing write access to your branch for faster reviews, as reviewers can push commits directly
 
 ### After submitting your PR
@@ -73,10 +73,11 @@ For more info, please refer to the [AGENTS.md](AGENTS.md) file.
 - When merging a PR, make sure you have a good understanding of the changes
 - If a PR does not warrant a new release, add `[no release]` in the squashed commit to spare CI resources
 - Be mindful of maintenance: most of the work going into a feature happens after the PR is merged. If the PR author is not committed to contribute long-term, someone else needs to take responsibility (you)
-- Add the ["merge ready"](https://github.com/ggml-org/llama.cpp/pulls?q=is%3Apr+is%3Aopen+draft%3Ano+sort%3Aupdated-desc+label%3A%22merge+ready%22+) label to a PR to indicate when a PR can be fast-merged without waiting for 2 independent reviews. [(more info)](https://github.com/ggml-org/llama.cpp/pull/26178)
+- Add the ["merge ready"](https://github.com/SirMathhman/llama.cpp/pulls?q=is%3Apr+is%3Aopen+draft%3Ano+sort%3Aupdated-desc+label%3A%22merge+ready%22+) label to a PR to indicate when a PR can be fast-merged without waiting for 2 independent reviews. [(more info)](https://github.com/ggml-org/llama.cpp/pull/26178)
 - Wait for CI results before merging
 
 Maintainers reserve the right to decline review or close pull requests for any reason, without any questions, particularly under any of the following conditions:
+
 - The proposed change is already mentioned in the roadmap or an existing issue, and it has been assigned to someone.
 - The pull request duplicates an existing one.
 - The contributor fails to adhere to this contributing guide or the AI policy.
@@ -92,6 +93,7 @@ Maintainers reserve the right to decline review or close pull requests for any r
 - Use sized integer types such as `int32_t` in the public API, e.g. `size_t` may also be appropriate for allocation sizes or byte offsets
 - Declare structs with `struct foo {}` instead of `typedef struct foo {} foo`
     - In C++ code omit optional `struct` and `enum` keyword whenever they are not necessary
+
     ```cpp
     // OK
     llama_context * ctx;
@@ -182,14 +184,14 @@ Maintainers reserve the right to decline review or close pull requests for any r
 # Code maintenance
 
 - Existing code should have designated collaborators and/or maintainers specified in the [CODEOWNERS](CODEOWNERS) file responsible for:
-  - Reviewing and merging related PRs
-  - Fixing related bugs
-  - Providing developer guidance/support
+    - Reviewing and merging related PRs
+    - Fixing related bugs
+    - Providing developer guidance/support
 
 - When adding or modifying a large piece of code:
-  - If you are a collaborator, make sure to add yourself to [CODEOWNERS](CODEOWNERS) to indicate your availability for reviewing related PRs
-  - If you are a contributor, find an existing collaborator who is willing to review and maintain your code long-term
-  - Provide the necessary CI workflow (and hardware) to test your changes (see [ci/README.md](https://github.com/ggml-org/llama.cpp/tree/master/ci))
+    - If you are a collaborator, make sure to add yourself to [CODEOWNERS](CODEOWNERS) to indicate your availability for reviewing related PRs
+    - If you are a contributor, find an existing collaborator who is willing to review and maintain your code long-term
+    - Provide the necessary CI workflow (and hardware) to test your changes (see [ci/README.md](ci/README.md))
 
 - New code should follow the guidelines (coding, naming, etc.) outlined in this document. Exceptions are allowed in isolated, backend-specific parts of the code that do not interface directly with the `ggml` interfaces.
   _(NOTE: for legacy reasons, existing code is not required to follow this guideline)_
@@ -204,6 +206,6 @@ Maintainers reserve the right to decline review or close pull requests for any r
 
 # Resources
 
-The Github issues, PRs and discussions contain a lot of information that can be useful to get familiar with the codebase. For convenience, some of the more important information is referenced from Github projects:
+The Github issues, PRs and discussions of the upstream [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) project contain a lot of information that can be useful to get familiar with the codebase. For convenience, some of the more important information is referenced from Github projects:
 
 https://github.com/ggml-org/llama.cpp/projects

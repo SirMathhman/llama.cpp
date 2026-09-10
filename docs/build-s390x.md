@@ -10,7 +10,7 @@ The project also includes many example programs and tools using the `llama` libr
 **To get the code:**
 
 ```bash
-git clone https://github.com/ggml-org/llama.cpp
+git clone https://github.com/SirMathhman/llama.cpp
 cd llama.cpp
 ```
 
@@ -29,8 +29,8 @@ cmake --build build --config Release -j $(nproc)
 
 **Notes**:
 
--   For faster repeated compilation, install [ccache](https://ccache.dev/)
--   By default, VXE/VXE2 is enabled. To disable it (not recommended):
+- For faster repeated compilation, install [ccache](https://ccache.dev/)
+- By default, VXE/VXE2 is enabled. To disable it (not recommended):
 
     ```bash
     cmake -S . -B build             \
@@ -42,7 +42,7 @@ cmake --build build --config Release -j $(nproc)
     cmake --build build --config Release -j $(nproc)
     ```
 
--   For debug builds:
+- For debug builds:
 
     ```bash
     cmake -S . -B build             \
@@ -52,7 +52,7 @@ cmake --build build --config Release -j $(nproc)
     cmake --build build --config Debug -j $(nproc)
     ```
 
--   For static builds, add `-DBUILD_SHARED_LIBS=OFF`:
+- For static builds, add `-DBUILD_SHARED_LIBS=OFF`:
 
     ```bash
     cmake -S . -B build             \
@@ -233,43 +233,43 @@ IBM VXE/VXE2 SIMD acceleration depends on the BLAS implementation. It is strongl
 | IBM z17  | ✅      | GCC 15.1.0               |
 | IBM zDNN | ✅      |                          |
 
--   ✅ - supported and verified to run as intended
--   🚫 - unsupported, we are unlikely able to provide support
+- ✅ - supported and verified to run as intended
+- 🚫 - unsupported, we are unlikely able to provide support
 
 ## Appendix B: SIMD Support Matrix
 
 |            | VX/VXE/VXE2 | zDNN | Spyre |
-|------------|-------------|------|-------|
-| FP32       | ✅           | ✅    | ❓     |
-| FP16       | ✅           | ✅    | ❓     |
-| BF16       | ✅           | ✅    | ❓     |
-| Q4_0       | ✅           | ❓    | ❓     |
-| Q4_1       | ✅           | ❓    | ❓     |
-| MXFP4      | ✅           | ❓    | ❓     |
-| Q5_0       | ✅           | ❓    | ❓     |
-| Q5_1       | ✅           | ❓    | ❓     |
-| Q8_0       | ✅           | ❓    | ❓     |
-| Q2_K       | 🚫           | ❓    | ❓     |
-| Q3_K       | ✅           | ❓    | ❓     |
-| Q4_K       | ✅           | ❓    | ❓     |
-| Q5_K       | ✅           | ❓    | ❓     |
-| Q6_K       | ✅           | ❓    | ❓     |
-| TQ1_0      | 🚫           | ❓    | ❓     |
-| TQ2_0      | 🚫           | ❓    | ❓     |
-| IQ2_XXS    | 🚫           | ❓    | ❓     |
-| IQ2_XS     | 🚫           | ❓    | ❓     |
-| IQ2_S      | 🚫           | ❓    | ❓     |
-| IQ3_XXS    | 🚫           | ❓    | ❓     |
-| IQ3_S      | 🚫           | ❓    | ❓     |
-| IQ1_S      | 🚫           | ❓    | ❓     |
-| IQ1_M      | 🚫           | ❓    | ❓     |
-| IQ4_NL     | ✅           | ❓    | ❓     |
-| IQ4_XS     | ✅           | ❓    | ❓     |
-| FP32->FP16 | 🚫           | ❓    | ❓     |
-| FP16->FP32 | 🚫           | ❓    | ❓     |
+| ---------- | ----------- | ---- | ----- |
+| FP32       | ✅          | ✅   | ❓    |
+| FP16       | ✅          | ✅   | ❓    |
+| BF16       | ✅          | ✅   | ❓    |
+| Q4_0       | ✅          | ❓   | ❓    |
+| Q4_1       | ✅          | ❓   | ❓    |
+| MXFP4      | ✅          | ❓   | ❓    |
+| Q5_0       | ✅          | ❓   | ❓    |
+| Q5_1       | ✅          | ❓   | ❓    |
+| Q8_0       | ✅          | ❓   | ❓    |
+| Q2_K       | 🚫          | ❓   | ❓    |
+| Q3_K       | ✅          | ❓   | ❓    |
+| Q4_K       | ✅          | ❓   | ❓    |
+| Q5_K       | ✅          | ❓   | ❓    |
+| Q6_K       | ✅          | ❓   | ❓    |
+| TQ1_0      | 🚫          | ❓   | ❓    |
+| TQ2_0      | 🚫          | ❓   | ❓    |
+| IQ2_XXS    | 🚫          | ❓   | ❓    |
+| IQ2_XS     | 🚫          | ❓   | ❓    |
+| IQ2_S      | 🚫          | ❓   | ❓    |
+| IQ3_XXS    | 🚫          | ❓   | ❓    |
+| IQ3_S      | 🚫          | ❓   | ❓    |
+| IQ1_S      | 🚫          | ❓   | ❓    |
+| IQ1_M      | 🚫          | ❓   | ❓    |
+| IQ4_NL     | ✅          | ❓   | ❓    |
+| IQ4_XS     | ✅          | ❓   | ❓    |
+| FP32->FP16 | 🚫          | ❓   | ❓    |
+| FP16->FP32 | 🚫          | ❓   | ❓    |
 
--   ✅ - acceleration available
--   🚫 - acceleration unavailable, will still run using scalar implementation
--   ❓ - acceleration unknown, please contribute if you can test it yourself
+- ✅ - acceleration available
+- 🚫 - acceleration unavailable, will still run using scalar implementation
+- ❓ - acceleration unknown, please contribute if you can test it yourself
 
 Last Updated by **Aaron Teo (aaron.teo1@ibm.com)** on Feb 15, 2026.
